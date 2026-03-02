@@ -23,7 +23,7 @@ from app.observability.logfire_config import (
 )
 from app.services.ai_agent import AIAgentService
 from app.services.notification import NotificationService
-from app.services.legacy.scraper import ScraperService
+from app.services.scraper import ScraperService
 
 
 class InventoryCrawler:
@@ -59,8 +59,7 @@ class InventoryCrawler:
     async def initialize(self) -> None:
         """Initialize all services."""
         try:
-            self.scraper = ScraperService(timeout=self.settings.scraper_timeout)
-            await self.scraper.initialize()
+            self.scraper = ScraperService()
 
             self.ai_agent = AIAgentService(
                 provider=self.settings.ai_provider,
@@ -95,8 +94,6 @@ class InventoryCrawler:
                 except asyncio.CancelledError:
                     pass
 
-        if self.scraper:
-            await self.scraper.close()
         log_event("cleanup_complete")
 
     def load_target_configs(self) -> list[TargetConfig]:
@@ -137,7 +134,7 @@ class InventoryCrawler:
         start_time = time.time()
         try:
             scrape_result = await self.scraper.scrape_page(target.url)
-            page_text = scrape_result["text"]
+            page_text = scrape_result["markdown"]
 
             availability = await self.ai_agent.check_availability(
                 raw_text=page_text,
@@ -225,6 +222,34 @@ async def main() -> None:
     except Exception as e:
         log_error("application_failed", error=str(e), exc_info=True)
         sys.exit(1)
+
+
+async def run_all_targets_once() -> list[dict]:
+    """
+    Single-shot execution for Appwrite Functions.
+    Checks all enabled targets once and returns a results summary.
+    """
+    configure_structlog()
+    initialize_logfire()
+
+    crawler = InventoryCrawler()
+    try:
+        await crawler.initialize()
+        targets = crawler.load_target_configs()
+        results = []
+        for target in targets:
+            if crawler.is_within_check_window(target):
+                await crawler.check_target(target)
+                results.append({"id": target.id, "checked": True})
+            else:
+                results.append({
+                    "id": target.id,
+                    "checked": False,
+                    "reason": "outside_check_window",
+                })
+        return results
+    finally:
+        await crawler.cleanup()
 
 
 if __name__ == "__main__":
