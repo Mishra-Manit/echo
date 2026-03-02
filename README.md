@@ -1,20 +1,20 @@
-# Testudo Crawler
+# Echo — Inventory Crawler
 
-**Course monitoring for University of Maryland students**
+**General-purpose availability monitoring with AI & Telegram alerts**
 
 ![Python Version](https://img.shields.io/badge/python-3.13+-blue.svg)
 ![License](https://img.shields.io/badge/license-Educational-green.svg)
 ![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)
 ![Framework](https://img.shields.io/badge/framework-FastAPI-009688.svg)
 
-Testudo Crawler monitors UMD course registration pages and sends Telegram alerts when seats open. You can describe what to watch in plain language (for example: specific professors, sections, or time windows).
+Echo monitors any web page and sends Telegram alerts when something becomes available. Describe what to watch for in plain language — Echo handles the scraping and analysis.
 
 ## Features
 
 **Telegram Notifications**
-- Real-time alerts when seats open
+- Real-time alerts when availability changes
 - Customizable notification messages
-- Per-course recipient configuration
+- Per-target configuration
 
 **Deployment**
 - One-click deployment to Render (free tier)
@@ -24,14 +24,14 @@ Testudo Crawler monitors UMD course registration pages and sends Telegram alerts
 ## How It Works
 
 ```
-Testudo Page → Playwright Scraper → AI Analysis → Telegram Alert → You
+Target Page → Playwright Scraper → AI Analysis → Telegram Alert → You
 ```
 
-1. **Playwright** scrapes the Testudo course page and extracts text
+1. **Playwright** scrapes the target page and extracts text
 2. **AI Agent** (Claude/GPT) analyzes the content using your instructions
-3. **Telegram Bot** sends notifications when seats are available
+3. **Telegram Bot** sends notifications when availability is detected
 
-Checks run every N minutes. If seats are found, you get an alert.
+Checks run every N minutes. If the condition is met, you get an alert.
 
 ## Self-Hosting Guide
 
@@ -48,8 +48,8 @@ You'll need:
 **Step 1: Clone the Repository**
 
 ```bash
-git clone https://github.com/Mishra-Manit/testudocrawler.git
-cd testudocrawler
+git clone https://github.com/Mishra-Manit/echo.git
+cd echo
 ```
 
 **Step 2: Install Dependencies**
@@ -80,16 +80,16 @@ Everything else can stay at defaults unless you want to customize behavior.
 2. Copy the "Id" number it shows you
 3. Use this as your `TELEGRAM_CHAT_ID`
 
-**Step 4: Configure Courses**
+**Step 4: Configure Targets**
 
-Edit `config/courses.yaml` to add the courses you want to monitor:
+Edit `config/targets.yaml` to add the pages you want to monitor:
 
 ```yaml
 targets:
-  - id: "cmsc216_spring26"
-    name: "CMSC216 (Kauffman)"
-    url: "https://app.testudo.umd.edu/soc/search?courseId=CMSC216&instructor=Kauffman..."
-    user_instructions: "Check if there are any open seats for Professor Kauffman's sections"
+  - id: "nike_dunk_low"
+    name: "Nike Dunk Low Retro"
+    url: "https://www.nike.com/t/dunk-low-retro-mens-shoes-87q99m/DD1391-100"
+    user_instructions: "Check if the shoe is available to purchase. Look for an Add to Cart button that is NOT greyed out."
     interval: 300  # Check every 5 minutes
     enabled: true
     check_start_hour: 8   # 8 AM
@@ -105,11 +105,11 @@ python -m app.runner
 You should see output like:
 
 ```
-INFO - Initializing Testudo Crawler...
+INFO - Initializing InventoryCrawler...
 INFO - Scraper Service initialized successfully
 INFO - AI Agent Service initialized successfully
 INFO - Telegram Notification Service initialized successfully
-INFO - Starting course check: CMSC216 (Kauffman)
+INFO - Starting target check: Nike Dunk Low Retro
 ```
 
 ### Cloud Deployment (Render)
@@ -119,7 +119,7 @@ Deploy to Render's free tier for 24/7 monitoring.
 **Step 1: Push to GitHub**
 
 ```bash
-git remote add origin https://github.com/Mishra-Manit/testudocrawler.git
+git remote add origin https://github.com/Mishra-Manit/echo.git
 git add .
 git commit -m "Initial commit"
 git push -u origin main
@@ -127,46 +127,42 @@ git push -u origin main
 
 **Step 2: Deploy to Render**
 
-**Option A: One-Click Deploy**
-
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Mishra-Manit/testudocrawler)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Mishra-Manit/echo)
 
 Click the button above and Render will use the included `render.yaml` config.
 
 ## Usage Examples
 
-### Monitor Specific Professor
+### Monitor a Product
 
 ```yaml
-- id: "cs_professor"
-  name: "CMSC132 (Nelson)"
-  url: "https://app.testudo.umd.edu/soc/search?courseId=CMSC132&instructor=Nelson..."
-  user_instructions: "Check if ANY section taught by Professor Nelson has open seats"
+- id: "ps5_restock"
+  name: "PlayStation 5 Console"
+  url: "https://www.bestbuy.com/site/ps5/..."
+  user_instructions: "Check if the product is available for purchase. Look for an 'Add to Cart' button that is active."
 ```
 
-### Monitor Specific Section with Time Window
+### Monitor Event Tickets
 
 ```yaml
-- id: "math_section"
-  name: "MATH140 Section 0201"
-  url: "https://app.testudo.umd.edu/soc/search?courseId=MATH140&sectionId=0201..."
-  user_instructions: "Check if section 0201 specifically has open seats"
-  check_start_hour: 6   # 6 AM
-  check_end_hour: 22    # 10 PM
-  interval: 300
+- id: "concert_tickets"
+  name: "Taylor Swift DC Tickets"
+  url: "https://www.ticketmaster.com/event/..."
+  user_instructions: "Check if any tickets are listed as available for purchase."
+  interval: 120
 ```
 
 ### Custom Notification Message
 
 ```yaml
-- id: "priority_course"
-  name: "ENGL101"
-  url: "https://app.testudo.umd.edu/soc/..."
-  user_instructions: "Check for open seats"
+- id: "limited_drop"
+  name: "Supreme Box Logo Hoodie"
+  url: "https://www.supremenewyork.com/..."
+  user_instructions: "Check if the item is in stock in any size"
   notification_message: |
-    URGENT: {course_name} has seats!
-    Sections available: {sections}
-    Register NOW: {course_url}
+    🚨 ALERT: {target_name} is available!
+    Items: {items}
+    Go now: {target_url}
 ```
 
 ## Architecture
@@ -183,20 +179,21 @@ Click the button above and Render will use the included `render.yaml` config.
 **Project Structure:**
 
 ```
-testudo-crawler/
+echo/
 ├── app/
 │   ├── runner.py              # Main orchestrator & scheduler
 │   ├── web.py                 # FastAPI web service
 │   ├── config.py              # Settings management
 │   ├── models/schemas.py      # Pydantic data models
 │   ├── services/
-│   │   ├── scraper.py         # Playwright-based scraper
+│   │   ├── scraper.py         # Firecrawl-based scraper
+│   │   ├── legacy/scraper.py  # Playwright-based scraper
 │   │   ├── ai_agent.py        # AI analysis service
 │   │   └── notification.py    # Telegram notifications
 │   └── observability/
 │       └── logfire_config.py  # Logfire initialization
-├── config/courses.yaml        # Course monitoring config
-├── tests/                     # Pytest test suite
+├── config/targets.yaml        # Target monitoring config
+├── tests/                     # Test suite
 └── requirements.txt           # Python dependencies
 ```
 
@@ -216,6 +213,4 @@ Please make sure tests pass and code is formatted with Black before submitting.
 
 ## License
 
-Educational use only. Not affiliated with the University of Maryland.
-
-**Disclaimer:** This tool is for educational purposes. Always follow your university's policies on automated systems.
+Educational use only.
