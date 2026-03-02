@@ -11,8 +11,6 @@ client = TestClient(app)
 
 def test_root_endpoint():
     """Test the root endpoint."""
-    # Note: This will fail to start the background task without env vars,
-    # but we can still test the endpoint structure
     try:
         response = client.get("/")
         print(f"✓ Root endpoint accessible: {response.status_code}")
@@ -54,7 +52,7 @@ def test_app_metadata():
 
 
 if __name__ == "__main__":
-    print("Testing Testudo Crawler Web Service\n")
+    print("Testing Inventory Crawler Web Service\n")
     print("=" * 50)
 
     test_app_metadata()

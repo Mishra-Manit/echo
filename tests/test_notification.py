@@ -35,7 +35,6 @@ logging.basicConfig(
 
 async def test_notification():
     """Test the notification service and send a real Telegram message."""
-    # Load configuration from environment
     settings = get_settings()
 
     print(f"\n{'='*60}")
@@ -43,16 +42,14 @@ async def test_notification():
     print(f"Chat ID: {settings.telegram_chat_id}")
     print(f"{'='*60}\n")
 
-    # Initialize NotificationService
     notification_service = NotificationService(
         bot_token=settings.telegram_bot_token,
         default_chat_id=settings.telegram_chat_id,
     )
 
     try:
-        # Prepare test message
         test_message = (
-            "🧪 <b>TEST MESSAGE</b> from the Echo Alert System\n\n"
+            "🧪 <b>TEST MESSAGE</b> from Echo Alert System\n\n"
             "This is a test notification to verify Telegram integration.\n"
             f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         )
@@ -60,13 +57,11 @@ async def test_notification():
         print(f"Sending test Telegram message...")
         print(f"Message:\n{test_message}\n")
 
-        # Send Telegram message
         result = await notification_service.send_message(
             chat_id=settings.telegram_chat_id,
             message=test_message
         )
 
-        # Output the results
         print(f"\n{'='*60}")
         print("NOTIFICATION RESULTS")
         print(f"{'='*60}\n")

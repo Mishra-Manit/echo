@@ -1,5 +1,5 @@
 """
-Test script for ScraperService.
+Test script for ScraperService (Firecrawl).
 Demonstrates how to use the scraper and output the extracted text.
 
 python tests/test_scraper.py
