@@ -1,10 +1,10 @@
-# Render Blueprint for Testudo Crawler
+# Render Blueprint for Echo Inventory Crawler
 # This file enables one-click deployment to Render
 # Documentation: https://render.com/docs/blueprint-spec
 
 services:
   - type: web
-    name: testudo-watchdog
+    name: echo-inventory-crawler
     env: python
     region: oregon  # Choose your preferred region
     plan: free  # Free tier

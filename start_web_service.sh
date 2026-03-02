@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Start script for Testudo Crawler Web Service
+# Start script for Echo Inventory Crawler Web Service
 # This script activates the virtual environment and starts the web service
 
 set -e  # Exit on error
 
-echo "Starting Testudo Crawler Web Service..."
+echo "Starting Echo Inventory Crawler Web Service..."
 echo "=========================================="
 
 # Check if virtual environment exists

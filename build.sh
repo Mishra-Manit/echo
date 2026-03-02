@@ -3,7 +3,7 @@
 set -o errexit
 
 echo "=========================================="
-echo "Building Testudo Crawler for Render"
+echo "Building Echo Inventory Crawler for Render"
 echo "=========================================="
 
 # 1. Upgrade pip
