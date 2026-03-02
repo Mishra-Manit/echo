@@ -118,8 +118,8 @@ class InventoryCrawler:
                     notification_message=t.get("notification_message"),
                     check_interval_seconds=t.get("interval", 300),
                     enabled=t.get("enabled", True),
-                    check_start_hour=t.get("check_start_hour", 8),
-                    check_end_hour=t.get("check_end_hour", 23),
+                    check_start_hour=t.get("check_start_hour"),
+                    check_end_hour=t.get("check_end_hour"),
                     check_timezone=t.get("check_timezone", "America/New_York"),
                 )
                 result.append(target)
@@ -140,6 +140,7 @@ class InventoryCrawler:
                 raw_text=page_text,
                 target_name=target.name,
                 user_instructions=target.user_instructions,
+                screenshot_url=scrape_result.get("screenshot"),
             )
 
             if availability.is_available:

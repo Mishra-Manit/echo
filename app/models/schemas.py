@@ -78,11 +78,11 @@ class TargetConfig(BaseModel):
         default=300, description="Check interval in seconds (default: 5 minutes)"
     )
     enabled: bool = Field(default=True, description="Whether monitoring is enabled")
-    check_start_hour: int = Field(
-        default=8, description="Start hour (0-23) for checking. Use null to disable time restrictions."
+    check_start_hour: Optional[int] = Field(
+        default=None, description="Start hour (0-23) for checking. Omit to run at all hours."
     )
-    check_end_hour: int = Field(
-        default=23, description="End hour (0-23) for checking."
+    check_end_hour: Optional[int] = Field(
+        default=None, description="End hour (0-23) for checking. Omit to run at all hours."
     )
     check_timezone: str = Field(
         default="America/New_York", description="Timezone for checking hours"
