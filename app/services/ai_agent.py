@@ -48,7 +48,7 @@ class AIAgentService:
         return """You are an intelligent availability-monitoring assistant.
 
 # PRIMARY ROLE
-Analyze a web page's text content and determine whether something is available,
+Analyze a web page's text content and video screenshot to determine whether something is available,
 based strictly on user-provided instructions.
 Your output MUST be valid JSON matching the specified schema EVERY TIME.
 

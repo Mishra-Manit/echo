@@ -1,0 +1,38 @@
+{
+  "projectId": "69a60569003cceceea7e",
+  "endpoint": "https://cloud.appwrite.io/v1",
+  "functions": [
+    {
+      "$id": "echo",
+      "name": "Echo Inventory Crawler",
+      "runtime": "python-3.12",
+      "path": ".",
+      "entrypoint": "main.py",
+      "scopes": [],
+      "schedule": "*/5 * * * *",
+      "timeout": 300,
+      "variables": [
+        {
+          "key": "AI_PROVIDER",
+          "value": "openai"
+        },
+        {
+          "key": "OPENAI_MODEL",
+          "value": "gpt-5.2"
+        },
+        {
+          "key": "ANTHROPIC_MODEL",
+          "value": "claude-sonnet-4-6"
+        },
+        {
+          "key": "SCRAPER_TIMEOUT",
+          "value": "30"
+        },
+        {
+          "key": "LOG_LEVEL",
+          "value": "INFO"
+        }
+      ]
+    }
+  ]
+}

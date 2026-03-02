@@ -2,10 +2,9 @@
 
 **General-purpose availability monitoring with AI & Telegram alerts**
 
-![Python Version](https://img.shields.io/badge/python-3.13+-blue.svg)
+![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)
 ![License](https://img.shields.io/badge/license-Educational-green.svg)
 ![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)
-![Framework](https://img.shields.io/badge/framework-FastAPI-009688.svg)
 
 Echo monitors any web page and sends Telegram alerts when something becomes available. Describe what to watch for in plain language — Echo handles the scraping and analysis.
 
@@ -13,76 +12,60 @@ Echo monitors any web page and sends Telegram alerts when something becomes avai
 
 **Telegram Notifications**
 - Real-time alerts when availability changes
-- Customizable notification messages
-- Per-target configuration
+- Customizable notification messages per target
 
 **Deployment**
-- One-click deployment to Render (free tier)
-- Local development support
-- Structured logging with Logfire integration
+- Deploys to Appwrite Functions (serverless, cron-scheduled)
+- Local single-shot execution for testing
 
 ## How It Works
 
 ```
-Target Page → Playwright Scraper → AI Analysis → Telegram Alert → You
+Target Page → Firecrawl Scraper → AI Analysis → Telegram Alert → You
 ```
 
-1. **Playwright** scrapes the target page and extracts text
+1. **Firecrawl** scrapes the target page and extracts markdown text
 2. **AI Agent** (Claude/GPT) analyzes the content using your instructions
-3. **Telegram Bot** sends notifications when availability is detected
+3. **Telegram Bot** sends a notification when availability is detected
 
-Checks run every N minutes. If the condition is met, you get an alert.
+Appwrite's cron scheduler fires the function on your chosen interval (default: every 5 minutes).
 
-## Self-Hosting Guide
+## Local Development
 
 ### Prerequisites
 
-You'll need:
+- Python 3.12+
+- [Firecrawl API key](https://firecrawl.dev)
+- [OpenAI API key](https://platform.openai.com/api-keys) or Anthropic key
+- [Telegram Bot Token](https://core.telegram.org/bots/tutorial) + Chat ID
 
-- **Python 3.13+** - [Download here](https://www.python.org/downloads/)
-- **OpenAI API Key** - [Create one here](https://platform.openai.com/api-keys)
-- **Telegram Bot Token** - [Create bot with BotFather](https://core.telegram.org/bots/tutorial)
-
-### Local Development Setup
-
-**Step 1: Clone the Repository**
+### Setup
 
 ```bash
 git clone https://github.com/Mishra-Manit/echo.git
 cd echo
-```
-
-**Step 2: Install Dependencies**
-
-```bash
+python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-playwright install chromium
 ```
 
-**Step 3: Configure Environment Variables**
+Create a `.env` file:
 
-```bash
-cp .env.example .env
 ```
-
-```bash
+FIRECRAWL_API_KEY=fc-xxxxx
 OPENAI_API_KEY=sk-proj-xxxxx
 AI_PROVIDER=openai
-OPENAI_MODEL=gpt-5-mini
+OPENAI_MODEL=gpt-4o-mini
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz
 TELEGRAM_CHAT_ID=123456789
 ```
 
-Everything else can stay at defaults unless you want to customize behavior.
-
 **Getting Your Telegram Chat ID:**
-1. Start a chat with [@userinfobot](https://t.me/userinfobot) on Telegram
+1. Start a chat with [@userinfobot](https://t.me/userinfobot)
 2. Copy the "Id" number it shows you
-3. Use this as your `TELEGRAM_CHAT_ID`
 
-**Step 4: Configure Targets**
+### Configure Targets
 
-Edit `config/targets.yaml` to add the pages you want to monitor:
+Edit `config/targets.yaml`:
 
 ```yaml
 targets:
@@ -90,46 +73,55 @@ targets:
     name: "Nike Dunk Low Retro"
     url: "https://www.nike.com/t/dunk-low-retro-mens-shoes-87q99m/DD1391-100"
     user_instructions: "Check if the shoe is available to purchase. Look for an Add to Cart button that is NOT greyed out."
-    interval: 300  # Check every 5 minutes
+    interval: 300
     enabled: true
-    check_start_hour: 8   # 8 AM
-    check_end_hour: 23    # 11 PM
+    check_start_hour: 8
+    check_end_hour: 23
 ```
 
-**Step 5: Run Locally**
+### Run a Single Check Locally
 
 ```bash
-python -m app.runner
+source venv/bin/activate
+python -c "import asyncio; from app.runner import run_all_targets_once; asyncio.run(run_all_targets_once())"
 ```
 
-You should see output like:
+## Cloud Deployment (Appwrite Functions)
 
-```
-INFO - Initializing InventoryCrawler...
-INFO - Scraper Service initialized successfully
-INFO - AI Agent Service initialized successfully
-INFO - Telegram Notification Service initialized successfully
-INFO - Starting target check: Nike Dunk Low Retro
-```
+### Prerequisites
 
-### Cloud Deployment (Render)
+- [Appwrite account](https://appwrite.io) and a project
+- [Appwrite CLI](https://appwrite.io/docs/tooling/command-line/installation): `npm install -g appwrite-cli`
 
-Deploy to Render's free tier for 24/7 monitoring.
+### Steps
 
-**Step 1: Push to GitHub**
+**1. Log in and link project**
 
 ```bash
-git remote add origin https://github.com/Mishra-Manit/echo.git
-git add .
-git commit -m "Initial commit"
-git push -u origin main
+appwrite login
 ```
 
-**Step 2: Deploy to Render**
+Edit `appwrite.json` and replace `<YOUR_APPWRITE_PROJECT_ID>` with your project ID from the Appwrite Console.
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Mishra-Manit/echo)
+**2. Set secret environment variables in the Appwrite Console**
 
-Click the button above and Render will use the included `render.yaml` config.
+Navigate to your function → Settings → Environment Variables and add:
+
+| Variable | Description |
+|---|---|
+| `FIRECRAWL_API_KEY` | Firecrawl API key |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token |
+| `TELEGRAM_CHAT_ID` | Your Telegram chat ID |
+| `OPENAI_API_KEY` | OpenAI key (if `AI_PROVIDER=openai`) |
+| `ANTHROPIC_API_KEY` | Anthropic key (if `AI_PROVIDER=anthropic`) |
+
+**3. Deploy**
+
+```bash
+appwrite push functions
+```
+
+The function runs on the schedule defined in `appwrite.json` (`*/5 * * * *` by default — every 5 minutes).
 
 ## Usage Examples
 
@@ -160,7 +152,7 @@ Click the button above and Render will use the included `render.yaml` config.
   url: "https://www.supremenewyork.com/..."
   user_instructions: "Check if the item is in stock in any size"
   notification_message: |
-    🚨 ALERT: {target_name} is available!
+    ALERT: {target_name} is available!
     Items: {items}
     Go now: {target_url}
 ```
@@ -168,48 +160,37 @@ Click the button above and Render will use the included `render.yaml` config.
 ## Architecture
 
 **Technology Stack:**
-- **Python 3.13+** - Runtime
-- **FastAPI + Uvicorn** - Web service
-- **Playwright** - Browser automation
-- **Pydantic AI** - Structured model outputs
-- **OpenAI GPT-5 mini (default) / Anthropic Claude (optional)** - Content analysis
-- **python-telegram-bot** - Alerts
-- **PyYAML, Structlog, Logfire** - Config + observability
+- **Python 3.12+** — Runtime
+- **Appwrite Functions** — Serverless hosting + cron scheduling
+- **Firecrawl** — Web scraping via HTTP API
+- **Pydantic AI** — Structured model outputs
+- **OpenAI GPT-4o-mini (default) / Anthropic Claude (optional)** — Content analysis
+- **python-telegram-bot** — Alerts
+- **PyYAML, Structlog, Logfire** — Config + observability
 
 **Project Structure:**
 
 ```
 echo/
+├── main.py                    # Appwrite Function entry point
+├── appwrite.json              # Appwrite deployment config
 ├── app/
-│   ├── runner.py              # Main orchestrator & scheduler
-│   ├── web.py                 # FastAPI web service
+│   ├── runner.py              # Orchestrator: run_all_targets_once()
 │   ├── config.py              # Settings management
 │   ├── models/schemas.py      # Pydantic data models
 │   ├── services/
-│   │   ├── scraper.py         # Firecrawl-based scraper
-│   │   ├── legacy/scraper.py  # Playwright-based scraper
+│   │   ├── scraper.py         # Firecrawl-based scraper (async)
+│   │   ├── legacy/scraper.py  # Playwright scraper (archived)
 │   │   ├── ai_agent.py        # AI analysis service
 │   │   └── notification.py    # Telegram notifications
 │   └── observability/
 │       └── logfire_config.py  # Logfire initialization
 ├── config/targets.yaml        # Target monitoring config
-├── tests/                     # Test suite
+├── tests/                     # Test scripts
 └── requirements.txt           # Python dependencies
 ```
 
-**Data Flow:** Scheduler (asyncio) → Scraper (Playwright) → AI Agent (Claude/GPT) → Notification Service (Telegram)
-
-Contributions are welcome:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and formatting (`pytest && black .`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to your fork (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-Please make sure tests pass and code is formatted with Black before submitting.
+**Data Flow:** Appwrite cron → `main(context)` → Firecrawl scrape → AI analysis → Telegram alert
 
 ## License
 
