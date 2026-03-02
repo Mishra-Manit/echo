@@ -3,13 +3,12 @@
 
 targets:
   # Example: Track a specific product on an e-commerce store
-  - id: "nike_dunk_low"
-    name: "Nike Dunk Low Retro (White/Black)"
-    url: "https://www.nike.com/t/dunk-low-retro-mens-shoes-87q99m/DD1391-100"
-    user_instructions: "Check if the shoe is available to purchase. Look for an 'Add to Cart' or 'Add to Bag' button that is NOT greyed out or disabled. If the page says 'Sold Out' or 'Currently Unavailable', it is NOT available."
-    notification_message: "🚨 ALERT: {target_name} is available!\n{target_url}"
-    enabled: true
-
+  # - id: "nike_dunk_low"
+  #   name: "Nike Dunk Low Retro (White/Black)"
+  #   url: "https://www.nike.com/t/dunk-low-retro-mens-shoes-87q99m/DD1391-100"
+  #   user_instructions: "Check if the shoe is available to purchase. Look for an 'Add to Cart' or 'Add to Bag' button that is NOT greyed out or disabled. If the page says 'Sold Out' or 'Currently Unavailable', it is NOT available."
+  #   notification_message: "🚨 ALERT: {target_name} is available!\n{target_url}"
+  #   enabled: true
   - id: "umcp_champion_sweatpant_gray_medium"
     name: "UMCP Champion Sweatpant H Gray - Medium"
     url: "https://umcp.spirit.bncollege.com/maryland-terrapins-maryland-terrapins-champion-sweatpant-h-gray/t-12202501+p-906678469464730+z-9-2749780404?_ref=p-SRP:m-GRID:i-r0c0:po-0"
