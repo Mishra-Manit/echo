@@ -25,7 +25,7 @@ from app.observability.logfire_config import (
 )
 from app.services.ai_agent import AIAgentService
 from app.services.notification import NotificationService
-from app.services.scraper import ScraperService
+from app.services.legacy.scraper import ScraperService
 
 
 class TestudoCrawler:

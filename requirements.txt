@@ -7,6 +7,7 @@ pydantic-settings==2.13.1
 # Web Scraping
 playwright==1.58.0
 playwright-stealth==1.0.6
+firecrawl-py>=1.0.0
 setuptools==75.8.0
 
 # AI Agent
