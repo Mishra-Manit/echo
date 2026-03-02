@@ -1,6 +1,6 @@
 {
   "projectId": "69a60569003cceceea7e",
-  "endpoint": "https://cloud.appwrite.io/v1",
+  "endpoint": "https://nyc.cloud.appwrite.io/v1",
   "functions": [
     {
       "$id": "echo",

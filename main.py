@@ -1,6 +1,10 @@
 """Appwrite Function entry point for Echo Inventory Crawler."""
 
 import asyncio
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.runner import run_all_targets_once
 
