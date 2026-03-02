@@ -9,6 +9,7 @@ from typing import Optional
 import structlog
 
 from pydantic_ai import Agent, BinaryContent
+from pydantic_ai.messages import ImageUrl
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.models.openai import OpenAIResponsesModel
 from pydantic_ai.providers.anthropic import AnthropicProvider
@@ -279,16 +280,7 @@ Step 6: OUTPUT — Build valid JSON with is_available, items[], and raw_text_sum
                     logger.warning(f"Failed to parse screenshot data URI: {e}")
             elif screenshot_url.startswith("http"):
                 # Pass URL directly — PydanticAI handles URL-based images
-                try:
-                    import httpx
-                    response = httpx.get(screenshot_url, timeout=15)
-                    response.raise_for_status()
-                    content_type = response.headers.get("content-type", "image/png")
-                    prompt_parts.append(
-                        BinaryContent(data=response.content, media_type=content_type)
-                    )
-                except Exception as e:
-                    logger.warning(f"Failed to fetch screenshot URL: {e}")
+                prompt_parts.append(ImageUrl(url=screenshot_url))
 
         prompt_parts.append(text_prompt)
 
