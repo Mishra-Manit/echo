@@ -8,29 +8,30 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 
 
-class SectionStatus(BaseModel):
-    """Represents the seat availability status for a course section."""
+class ItemDetail(BaseModel):
+    """Represents a single monitored item's availability status."""
 
-    section_id: str = Field(
-        ..., description="The 4-digit section number, e.g., '0201'"
+    identifier: str = Field(
+        ..., description="A label for this item, e.g. 'Section 0201' or 'Size M'"
     )
-    open_seats: int = Field(..., description="The number of open seats found")
-    total_seats: int = Field(..., description="The total number of seats")
-    waitlist: int = Field(
-        default=0, description="The number of waitlist spots"
+    status: str = Field(
+        ..., description="Short availability status, e.g. 'available', 'sold out'"
+    )
+    details: str = Field(
+        default="", description="Extra context about this item"
     )
 
 
 class AvailabilityCheck(BaseModel):
-    """Result of AI analysis for seat availability."""
+    """Result of AI analysis for availability."""
 
     is_available: bool = Field(
         ...,
-        description="True if ANY section has open_seats > 0",
+        description="True if the target satisfies the user's availability condition",
     )
-    sections: list[SectionStatus] = Field(
+    items: list[ItemDetail] = Field(
         default_factory=list,
-        description="List of available sections with seat information",
+        description="List of matching items found on the page",
     )
     raw_text_summary: str = Field(
         ...,
@@ -59,12 +60,12 @@ class NotificationResult(BaseModel):
     )
 
 
-class CourseConfig(BaseModel):
-    """Configuration model for a course to monitor."""
+class TargetConfig(BaseModel):
+    """Configuration model for a target to monitor."""
 
-    id: str = Field(..., description="Unique identifier for the course")
-    name: str = Field(..., description="Course name")
-    url: str = Field(..., description="The exact URL with filters applied")
+    id: str = Field(..., description="Unique identifier for the target")
+    name: str = Field(..., description="Human-readable target name")
+    url: str = Field(..., description="The exact URL to monitor")
     user_instructions: str = Field(
         ...,
         description="Natural language instructions for what to check on the page"
@@ -78,13 +79,13 @@ class CourseConfig(BaseModel):
     )
     enabled: bool = Field(default=True, description="Whether monitoring is enabled")
     check_start_hour: int = Field(
-        default=8, description="Start hour (0-23) for checking. 8 = 8AM EST. Use null to disable time restrictions."
+        default=8, description="Start hour (0-23) for checking. Use null to disable time restrictions."
     )
     check_end_hour: int = Field(
-        default=23, description="End hour (0-23) for checking. 23 = 11PM EST. Checks must finish before this hour."
+        default=23, description="End hour (0-23) for checking."
     )
     check_timezone: str = Field(
-        default="America/New_York", description="Timezone for checking hours (e.g. 'America/New_York' for EST/EDT)"
+        default="America/New_York", description="Timezone for checking hours"
     )
 
     @field_validator("user_instructions")

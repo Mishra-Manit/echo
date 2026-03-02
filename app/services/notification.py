@@ -1,7 +1,6 @@
 """
 Notification service for sending Telegram alerts.
 Handles async Telegram delivery, formatting, and error handling.
-Uses native async Telegram Bot API - no thread pool executor needed.
 """
 
 import asyncio
@@ -21,18 +20,7 @@ logger = structlog.get_logger(__name__)
 class NotificationService:
     """Service for sending Telegram notifications."""
 
-    def __init__(
-        self,
-        bot_token: str,
-        default_chat_id: str,
-    ):
-        """
-        Initialize notification service.
-
-        Args:
-            bot_token: Telegram Bot API token
-            default_chat_id: Default chat ID to send messages to
-        """
+    def __init__(self, bot_token: str, default_chat_id: str):
         self.bot = Bot(token=bot_token)
         self.default_chat_id = default_chat_id
         logger.info("Telegram notification service initialized")
@@ -43,17 +31,7 @@ class NotificationService:
         message: str,
         max_retries: int = 3,
     ) -> NotificationResult:
-        """
-        Send Telegram message asynchronously with retry logic.
-
-        Args:
-            chat_id: Recipient Telegram chat ID
-            message: Message content
-            max_retries: Maximum number of retry attempts
-
-        Returns:
-            NotificationResult with delivery status
-        """
+        """Send Telegram message asynchronously with retry logic."""
         for attempt in range(1, max_retries + 1):
             try:
                 logger.info(
@@ -61,7 +39,6 @@ class NotificationService:
                     f"(attempt {attempt}/{max_retries})"
                 )
 
-                # Native async - no run_in_executor needed!
                 telegram_message = await self.bot.send_message(
                     chat_id=chat_id,
                     text=message,
@@ -85,12 +62,8 @@ class NotificationService:
                     f"Telegram error sending to chat {chat_id} "
                     f"(attempt {attempt}): {e.message}"
                 )
-
                 if attempt < max_retries:
-                    # Exponential backoff
-                    wait_time = 2**attempt
-                    logger.info(f"Retrying in {wait_time} seconds...")
-                    await asyncio.sleep(wait_time)
+                    await asyncio.sleep(2**attempt)
                 else:
                     return NotificationResult(
                         success=False,
@@ -104,10 +77,8 @@ class NotificationService:
                     f"Unexpected error sending to chat {chat_id} "
                     f"(attempt {attempt}): {e}"
                 )
-
                 if attempt < max_retries:
-                    wait_time = 2**attempt
-                    await asyncio.sleep(wait_time)
+                    await asyncio.sleep(2**attempt)
                 else:
                     return NotificationResult(
                         success=False,
@@ -116,7 +87,6 @@ class NotificationService:
                         sent_at=datetime.now(timezone.utc),
                     )
 
-        # This should never be reached
         return NotificationResult(
             success=False,
             recipient=chat_id,
@@ -126,20 +96,20 @@ class NotificationService:
 
     async def send_availability_alert(
         self,
-        course_name: str,
+        target_name: str,
         availability: AvailabilityCheck,
-        course_url: str,
+        target_url: str,
         custom_message: Optional[str] = None,
         chat_id: Optional[str] = None,
     ) -> NotificationResult:
         """
-        Send seat availability alert to the configured chat.
+        Send availability alert to the configured chat.
 
         Args:
-            course_name: Name of the course
+            target_name: Name of the target being monitored
             availability: Availability check results
-            course_url: URL to the course registration page
-            custom_message: Optional custom message template with {course_name}, {sections}, {course_url} variables
+            target_url: URL to the monitored page
+            custom_message: Optional custom message template with {target_name}, {items}, {target_url} variables
             chat_id: Optional specific chat ID (uses default if not provided)
 
         Returns:
@@ -147,37 +117,33 @@ class NotificationService:
         """
         target_chat_id = chat_id or self.default_chat_id
 
-        # Use custom message if provided, otherwise use default format
         if custom_message:
-            # Build sections string
-            available_sections = [
-                s.section_id for s in availability.sections if s.open_seats > 0
+            available_items = [
+                item.identifier for item in availability.items if item.status == "available"
             ]
-            sections_str = ", ".join(available_sections) if available_sections else "N/A"
+            items_str = ", ".join(available_items) if available_items else "N/A"
 
             try:
-                # Replace template variables
                 message = custom_message.format(
-                    course_name=course_name,
-                    sections=sections_str,
-                    course_url=course_url
+                    target_name=target_name,
+                    items=items_str,
+                    target_url=target_url,
                 )
             except (KeyError, ValueError) as e:
-                # Fallback to default format if custom message has issues
                 logger.warning(f"Custom message format error: {e}, using default format")
                 message = self._format_availability_alert(
-                    course_name=course_name,
+                    target_name=target_name,
                     availability=availability,
-                    course_url=course_url,
+                    target_url=target_url,
                 )
         else:
             message = self._format_availability_alert(
-                course_name=course_name,
+                target_name=target_name,
                 availability=availability,
-                course_url=course_url,
+                target_url=target_url,
             )
 
-        logger.info(f"Sending availability alert to chat {target_chat_id}: {course_name}")
+        logger.info(f"Sending availability alert to chat {target_chat_id}: {target_name}")
 
         result = await self.send_message(target_chat_id, message)
 
@@ -190,35 +156,21 @@ class NotificationService:
 
     def _format_availability_alert(
         self,
-        course_name: str,
+        target_name: str,
         availability: AvailabilityCheck,
-        course_url: str,
+        target_url: str,
     ) -> str:
-        """
-        Format seat availability alert message.
-
-        Args:
-            course_name: Name of the course
-            availability: Availability check results
-            course_url: URL to the course page
-
-        Returns:
-            Formatted Telegram message
-        """
-        # Extract section numbers with open seats
-        available_sections = [
-            section.section_id
-            for section in availability.sections
-            if section.open_seats > 0
-        ]
-
-        sections_str = ", ".join(available_sections)
-
-        # Format message
-        message = (
-            f"🚨 <b>UMD ALERT:</b> {course_name} has open seats!\n"
-            f"<b>Sections:</b> {sections_str}\n"
-            f"<b>Link:</b> {course_url}"
+        """Format availability alert message."""
+        items_summary = "\n".join(
+            f"  • {item.identifier}: {item.status}" + (f" — {item.details}" if item.details else "")
+            for item in availability.items
         )
+
+        message = (
+            f"🚨 <b>ALERT:</b> {target_name} is available!\n"
+        )
+        if items_summary:
+            message += f"<b>Items:</b>\n{items_summary}\n"
+        message += f"<b>Link:</b> {target_url}"
 
         return message

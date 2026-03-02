@@ -1,6 +1,6 @@
 """
-Main runner for Testudo Crawler.
-Scheduler-based application that automatically checks course availability.
+Main runner for InventoryCrawler.
+Scheduler-based application that automatically checks target availability.
 """
 
 import asyncio
@@ -11,10 +11,8 @@ from datetime import datetime
 from typing import Dict, Optional
 from zoneinfo import ZoneInfo
 
-import logfire
-
 from app.config import get_settings
-from app.models.schemas import CourseConfig
+from app.models.schemas import TargetConfig
 from app.observability.logfire_config import (
     configure_structlog,
     initialize_logfire,
@@ -28,42 +26,34 @@ from app.services.notification import NotificationService
 from app.services.legacy.scraper import ScraperService
 
 
-class TestudoCrawler:
-    """Main crawler application that monitors course availability."""
+class InventoryCrawler:
+    """Main crawler application that monitors target availability."""
 
     def __init__(self):
-        """Initialize the crawler application."""
         self.settings = get_settings()
         self.scraper: Optional[ScraperService] = None
         self.ai_agent: Optional[AIAgentService] = None
         self.notification: Optional[NotificationService] = None
         self.running = False
-        self.course_tasks: Dict[str, asyncio.Task] = {}
+        self.target_tasks: Dict[str, asyncio.Task] = {}
         self.last_check_times: Dict[str, datetime] = {}
 
-    def is_within_check_window(self, course: CourseConfig) -> bool:
-        """
-        Check if current time is within the configured check window for a course.
-        """
+    def is_within_check_window(self, target: TargetConfig) -> bool:
+        """Check if current time is within the configured check window for a target."""
         try:
-            # Get timezone (defaults to America/New_York for EST/EDT)
-            tz = ZoneInfo(course.check_timezone)
+            tz = ZoneInfo(target.check_timezone)
             current_time = datetime.now(tz)
             current_hour = current_time.hour
-            
-            # If start_hour and end_hour are the same and both are None-like, disable check
-            if course.check_start_hour is None or course.check_end_hour is None:
+
+            if target.check_start_hour is None or target.check_end_hour is None:
                 return True
-            
-            # Simple case: start < end (e.g., 8 < 23)
-            if course.check_start_hour <= course.check_end_hour:
-                return course.check_start_hour <= current_hour < course.check_end_hour
-            
-            # Wrap-around case: start > end (e.g., 22 > 6, meaning 10PM-6AM)
-            return current_hour >= course.check_start_hour or current_hour < course.check_end_hour
+
+            if target.check_start_hour <= target.check_end_hour:
+                return target.check_start_hour <= current_hour < target.check_end_hour
+
+            return current_hour >= target.check_start_hour or current_hour < target.check_end_hour
         except Exception as e:
-            log_error("error_checking_time_window", course_id=course.id, error=str(e))
-            # On error, allow check (fail open for safety)
+            log_error("error_checking_time_window", target_id=target.id, error=str(e))
             return True
 
     async def initialize(self) -> None:
@@ -97,7 +87,7 @@ class TestudoCrawler:
 
     async def cleanup(self) -> None:
         """Cleanup resources on shutdown."""
-        for task in self.course_tasks.values():
+        for task in self.target_tasks.values():
             if not task.done():
                 task.cancel()
                 try:
@@ -109,93 +99,93 @@ class TestudoCrawler:
             await self.scraper.close()
         log_event("cleanup_complete")
 
-    def load_course_configs(self) -> list[CourseConfig]:
-        """Load course configurations from YAML."""
-        config = self.settings.load_courses_config()
+    def load_target_configs(self) -> list[TargetConfig]:
+        """Load target configurations from YAML."""
+        config = self.settings.load_targets_config()
         targets = config.get("targets", [])
 
-        courses = []
-        for target in targets:
-            if not target.get("enabled", True):
+        result = []
+        for t in targets:
+            if not t.get("enabled", True):
                 continue
 
             try:
-                if "user_instructions" not in target:
-                    raise ValueError(f"Course '{target.get('id', 'unknown')}' missing 'user_instructions'")
+                if "user_instructions" not in t:
+                    raise ValueError(f"Target '{t.get('id', 'unknown')}' missing 'user_instructions'")
 
-                course = CourseConfig(
-                    id=target["id"],
-                    name=target["name"],
-                    url=target["url"],
-                    user_instructions=target["user_instructions"],
-                    notification_message=target.get("notification_message"),
-                    check_interval_seconds=target.get("interval", 300),
-                    enabled=target.get("enabled", True),
-                    check_start_hour=target.get("check_start_hour", 8),
-                    check_end_hour=target.get("check_end_hour", 23),
-                    check_timezone=target.get("check_timezone", "America/New_York"),
+                target = TargetConfig(
+                    id=t["id"],
+                    name=t["name"],
+                    url=t["url"],
+                    user_instructions=t["user_instructions"],
+                    notification_message=t.get("notification_message"),
+                    check_interval_seconds=t.get("interval", 300),
+                    enabled=t.get("enabled", True),
+                    check_start_hour=t.get("check_start_hour", 8),
+                    check_end_hour=t.get("check_end_hour", 23),
+                    check_timezone=t.get("check_timezone", "America/New_York"),
                 )
-                courses.append(course)
+                result.append(target)
             except Exception as e:
-                log_error("failed_to_load_course", course_id=target.get('id', 'unknown'), error=str(e))
+                log_error("failed_to_load_target", target_id=t.get('id', 'unknown'), error=str(e))
 
-        log_event("courses_loaded", count=len(courses))
-        return courses
+        log_event("targets_loaded", count=len(result))
+        return result
 
-    async def check_course(self, course: CourseConfig) -> None:
-        """Check a single course for seat availability."""
+    async def check_target(self, target: TargetConfig) -> None:
+        """Check a single target for availability."""
         start_time = time.time()
         try:
-            scrape_result = await self.scraper.scrape_page(course.url)
+            scrape_result = await self.scraper.scrape_page(target.url)
             page_text = scrape_result["text"]
 
             availability = await self.ai_agent.check_availability(
                 raw_text=page_text,
-                course_name=course.name,
-                user_instructions=course.user_instructions,
+                target_name=target.name,
+                user_instructions=target.user_instructions,
             )
 
             if availability.is_available:
                 await self.notification.send_availability_alert(
-                    course_name=course.name,
+                    target_name=target.name,
                     availability=availability,
-                    course_url=course.url,
-                    custom_message=course.notification_message,
+                    target_url=target.url,
+                    custom_message=target.notification_message,
                 )
-                log_event("seats_available", course_id=course.id, sections=[s.section_id for s in availability.sections if s.open_seats > 0])
+                log_event("target_available", target_id=target.id, items=[i.identifier for i in availability.items])
 
-            self.last_check_times[course.id] = datetime.now()
-            log_debug("course_checked", course_id=course.id, available=availability.is_available, duration=round(time.time() - start_time, 2))
+            self.last_check_times[target.id] = datetime.now()
+            log_debug("target_checked", target_id=target.id, available=availability.is_available, duration=round(time.time() - start_time, 2))
         except Exception as e:
-            log_error("course_check_failed", course_id=course.id, error=str(e), duration=round(time.time() - start_time, 2))
+            log_error("target_check_failed", target_id=target.id, error=str(e), duration=round(time.time() - start_time, 2))
 
-    async def monitor_course_loop(self, course: CourseConfig) -> None:
-        """Monitor a single course in a loop with its configured interval."""
+    async def monitor_target_loop(self, target: TargetConfig) -> None:
+        """Monitor a single target in a loop with its configured interval."""
         while self.running:
             try:
-                if self.is_within_check_window(course):
-                    await self.check_course(course)
-                await asyncio.sleep(course.check_interval_seconds)
+                if self.is_within_check_window(target):
+                    await self.check_target(target)
+                await asyncio.sleep(target.check_interval_seconds)
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                log_error("monitor_loop_error", course_id=course.id, error=str(e))
+                log_error("monitor_loop_error", target_id=target.id, error=str(e))
                 await asyncio.sleep(60)
 
     async def run(self) -> None:
         """Run the main monitoring loop."""
-        courses = self.load_course_configs()
-        if not courses:
-            log_warning("no_courses_configured")
+        targets = self.load_target_configs()
+        if not targets:
+            log_warning("no_targets_configured")
             return
 
         self.running = True
-        for course in courses:
-            self.course_tasks[course.id] = asyncio.create_task(self.monitor_course_loop(course))
+        for target in targets:
+            self.target_tasks[target.id] = asyncio.create_task(self.monitor_target_loop(target))
 
-        log_event("crawler_started", course_count=len(courses))
+        log_event("crawler_started", target_count=len(targets))
         try:
-            await asyncio.gather(*self.course_tasks.values())
+            await asyncio.gather(*self.target_tasks.values())
         except asyncio.CancelledError:
             pass
         finally:
@@ -213,7 +203,7 @@ class TestudoCrawler:
             await self.cleanup()
 
 
-def setup_signal_handlers(crawler: "TestudoCrawler") -> None:
+def setup_signal_handlers(crawler: "InventoryCrawler") -> None:
     """Configure SIGINT/SIGTERM handlers to stop the crawler gracefully."""
     def handle_signal(_signum, _frame):
         crawler.running = False
@@ -227,7 +217,7 @@ async def main() -> None:
     configure_structlog()
     initialize_logfire()
 
-    crawler = TestudoCrawler()
+    crawler = InventoryCrawler()
     setup_signal_handlers(crawler)
 
     try:
@@ -239,4 +229,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

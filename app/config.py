@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     logfire_token: Optional[str] = Field(default=None, alias="LOGFIRE_TOKEN")
 
     # Configuration File Paths
-    courses_config_path: str = Field(default=str(_PROJECT_ROOT / "config" / "courses.yaml"))
+    targets_config_path: str = Field(default=str(_PROJECT_ROOT / "config" / "targets.yaml"))
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -66,7 +66,6 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
-
 
     @field_validator("log_level")
     @classmethod
@@ -105,14 +104,14 @@ class Settings(BaseSettings):
             raise ValueError("ANTHROPIC_API_KEY is required when AI_PROVIDER='anthropic'")
         return v
 
-    def load_courses_config(self) -> dict[str, Any]:
-        """Load courses configuration from YAML file."""
-        path = Path(self.courses_config_path)
+    def load_targets_config(self) -> dict[str, Any]:
+        """Load targets configuration from YAML file."""
+        path = Path(self.targets_config_path)
         if not path.is_absolute():
             path = _PROJECT_ROOT / path
         if not path.exists():
             raise FileNotFoundError(
-                f"Courses configuration file not found: {path.absolute()}"
+                f"Targets configuration file not found: {path.absolute()}"
             )
 
         with open(path, "r", encoding="utf-8") as f:
@@ -120,7 +119,7 @@ class Settings(BaseSettings):
 
         if not config or "targets" not in config:
             raise ValueError(
-                f"Invalid courses configuration: missing 'targets' key in {path}"
+                f"Invalid targets configuration: missing 'targets' key in {path}"
             )
 
         return config
