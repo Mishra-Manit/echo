@@ -1,7 +1,6 @@
 """
-FastAPI web service wrapper for Testudo Crawler.
+FastAPI web service wrapper for InventoryCrawler.
 Enables deployment on Render's free tier by providing HTTP endpoints.
-Includes Telegram bot webhook for /start command.
 """
 
 import asyncio
@@ -16,13 +15,13 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.observability.logfire_config import initialize_logfire
-from app.runner import TestudoCrawler, setup_signal_handlers
+from app.runner import InventoryCrawler, setup_signal_handlers
 
 logger = structlog.get_logger(__name__)
 
 # Background task reference
 crawler_task: Optional[asyncio.Task] = None
-crawler_instance: Optional[TestudoCrawler] = None
+crawler_instance: Optional[InventoryCrawler] = None
 start_time: datetime = datetime.now(timezone.utc)
 
 
@@ -30,10 +29,10 @@ async def run_crawler_background():
     """Run the crawler application as a background task."""
     global crawler_instance
 
-    logger.info("Starting Testudo Crawler background service...")
+    logger.info("Starting InventoryCrawler background service...")
 
     try:
-        crawler_instance = TestudoCrawler()
+        crawler_instance = InventoryCrawler()
         setup_signal_handlers(crawler_instance)
         await crawler_instance.start()
     except Exception as e:
@@ -43,25 +42,19 @@ async def run_crawler_background():
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    """
-    Manage application lifespan: startup and shutdown.
-    Starts the crawler as a background task during startup.
-    """
+    """Manage application lifespan: startup and shutdown."""
     global crawler_task, start_time
 
-    # Startup
     logger.info("FastAPI application starting...")
     initialize_logfire()
 
     start_time = datetime.now(timezone.utc)
 
-    # Start crawler background task
     crawler_task = asyncio.create_task(run_crawler_background())
     logger.info("Crawler background task started")
 
     yield
 
-    # Shutdown
     logger.info("FastAPI application shutting down...")
 
     if crawler_instance:
@@ -81,42 +74,34 @@ async def lifespan(_app: FastAPI):
     logger.info("Shutdown complete")
 
 
-# Initialize FastAPI app with lifespan
 app = FastAPI(
-    title="Testudo Crawler Service",
-    description="Course availability monitoring service with web endpoint for Render deployment",
-    version="1.0.0",
+    title="Inventory Crawler Service",
+    description="General-purpose inventory monitoring service with web endpoint for Render deployment",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
 
 @app.get("/", status_code=status.HTTP_200_OK)
 async def root() -> JSONResponse:
-    """
-    Root endpoint - confirms service is alive.
-    Render will ping this endpoint to keep the service active.
-    """
+    """Root endpoint - confirms service is alive."""
     uptime = (datetime.now(timezone.utc) - start_time).total_seconds()
 
     return JSONResponse(
         content={
             "status": "alive",
-            "service": "Testudo Crawler",
+            "service": "Inventory Crawler",
             "uptime_seconds": round(uptime, 2),
-            "message": "Course monitoring service is running",
+            "message": "Inventory monitoring service is running",
         }
     )
 
 
 @app.get("/health", status_code=status.HTTP_200_OK)
 async def health_check() -> JSONResponse:
-    """
-    Health check endpoint for monitoring and load balancers.
-    Returns detailed service status.
-    """
+    """Health check endpoint for monitoring and load balancers."""
     uptime = (datetime.now(timezone.utc) - start_time).total_seconds()
 
-    # Check if background task is running
     task_status = "unknown"
     if crawler_task is None:
         task_status = "not_started"
@@ -128,7 +113,6 @@ async def health_check() -> JSONResponse:
     else:
         task_status = "running"
 
-    # Determine overall health
     is_healthy = task_status in ["running", "not_started"]
 
     health_data = {
@@ -138,12 +122,11 @@ async def health_check() -> JSONResponse:
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
-    # Include course monitoring stats if available
     if crawler_instance and crawler_instance.last_check_times:
-        health_data["monitored_courses"] = len(crawler_instance.last_check_times)
+        health_data["monitored_targets"] = len(crawler_instance.last_check_times)
         health_data["last_checks"] = {
-            course_id: check_time.isoformat()
-            for course_id, check_time in crawler_instance.last_check_times.items()
+            target_id: check_time.isoformat()
+            for target_id, check_time in crawler_instance.last_check_times.items()
         }
 
     response_status = status.HTTP_200_OK if is_healthy else status.HTTP_503_SERVICE_UNAVAILABLE
@@ -153,23 +136,17 @@ async def health_check() -> JSONResponse:
 
 @app.get("/ping", status_code=status.HTTP_200_OK)
 async def ping() -> Dict[str, str]:
-    """
-    Simple ping endpoint for uptime monitoring services.
-    Returns minimal response for efficiency.
-    """
+    """Simple ping endpoint for uptime monitoring services."""
     return {"ping": "pong"}
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    # Get port from environment variable (Render sets this automatically)
     port = int(os.getenv("PORT", "10000"))
 
     logger.info(f"Starting web service on port {port}...")
 
-    # Run the FastAPI application
-    # host="0.0.0.0" is required for Render to route traffic properly
     uvicorn.run(
         app,
         host="0.0.0.0",

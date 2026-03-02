@@ -1,0 +1,23 @@
+# Target Monitoring Configuration
+# Define what you want to monitor — any website, any product, any page.
+
+targets:
+  # Example: Track a specific product on an e-commerce store
+  - id: "nike_dunk_low"
+    name: "Nike Dunk Low Retro (White/Black)"
+    url: "https://www.nike.com/t/dunk-low-retro-mens-shoes-87q99m/DD1391-100"
+    user_instructions: "Check if the shoe is available to purchase. Look for an 'Add to Cart' or 'Add to Bag' button that is NOT greyed out or disabled. If the page says 'Sold Out' or 'Currently Unavailable', it is NOT available."
+    notification_message: "🚨 ALERT: {target_name} is available!\n{target_url}"
+    interval: 300
+    enabled: false
+    check_start_hour: 8
+    check_end_hour: 23
+    check_timezone: "America/New_York"
+
+  # Example: Track concert ticket availability
+  # - id: "taylor_swift_dc"
+  #   name: "Taylor Swift — Eras Tour DC"
+  #   url: "https://www.ticketmaster.com/event/example"
+  #   user_instructions: "Check if any tickets are listed as available for purchase. Look for a 'Buy Tickets' or 'Get Tickets' button. If it says 'No tickets available' or 'Sold Out', it is NOT available."
+  #   interval: 120
+  #   enabled: true
