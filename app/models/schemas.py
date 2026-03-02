@@ -74,9 +74,6 @@ class TargetConfig(BaseModel):
         default=None,
         description="Custom notification message (optional). Defaults to generic alert if not provided."
     )
-    check_interval_seconds: int = Field(
-        default=300, description="Check interval in seconds (default: 5 minutes)"
-    )
     enabled: bool = Field(default=True, description="Whether monitoring is enabled")
     check_start_hour: Optional[int] = Field(
         default=None, description="Start hour (0-23) for checking. Omit to run at all hours."

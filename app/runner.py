@@ -11,6 +11,8 @@ from datetime import datetime
 from typing import Dict, Optional
 from zoneinfo import ZoneInfo
 
+import logfire
+
 from app.config import get_settings
 from app.models.schemas import TargetConfig
 from app.observability.logfire_config import (
@@ -116,7 +118,6 @@ class InventoryCrawler:
                     url=t["url"],
                     user_instructions=t["user_instructions"],
                     notification_message=t.get("notification_message"),
-                    check_interval_seconds=t.get("interval", 300),
                     enabled=t.get("enabled", True),
                     check_start_hour=t.get("check_start_hour"),
                     check_end_hour=t.get("check_end_hour"),
@@ -132,30 +133,31 @@ class InventoryCrawler:
     async def check_target(self, target: TargetConfig) -> None:
         """Check a single target for availability."""
         start_time = time.time()
-        try:
-            scrape_result = await self.scraper.scrape_page(target.url)
-            page_text = scrape_result["markdown"]
+        with logfire.span("check_target {target_id}", target_id=target.id, target_name=target.name):
+            try:
+                scrape_result = await self.scraper.scrape_page(target.url)
+                page_text = scrape_result["markdown"]
 
-            availability = await self.ai_agent.check_availability(
-                raw_text=page_text,
-                target_name=target.name,
-                user_instructions=target.user_instructions,
-                screenshot_url=scrape_result.get("screenshot"),
-            )
-
-            if availability.is_available:
-                await self.notification.send_availability_alert(
+                availability = await self.ai_agent.check_availability(
+                    raw_text=page_text,
                     target_name=target.name,
-                    availability=availability,
-                    target_url=target.url,
-                    custom_message=target.notification_message,
+                    user_instructions=target.user_instructions,
+                    screenshot_url=scrape_result.get("screenshot"),
                 )
-                log_event("target_available", target_id=target.id, items=[i.identifier for i in availability.items])
 
-            self.last_check_times[target.id] = datetime.now()
-            log_debug("target_checked", target_id=target.id, available=availability.is_available, duration=round(time.time() - start_time, 2))
-        except Exception as e:
-            log_error("target_check_failed", target_id=target.id, error=str(e), duration=round(time.time() - start_time, 2))
+                if availability.is_available:
+                    await self.notification.send_availability_alert(
+                        target_name=target.name,
+                        availability=availability,
+                        target_url=target.url,
+                        custom_message=target.notification_message,
+                    )
+                    log_event("target_available", target_id=target.id, items=[i.identifier for i in availability.items])
+
+                self.last_check_times[target.id] = datetime.now()
+                log_debug("target_checked", target_id=target.id, available=availability.is_available, duration=round(time.time() - start_time, 2))
+            except Exception as e:
+                log_error("target_check_failed", target_id=target.id, error=str(e), duration=round(time.time() - start_time, 2))
 
     async def monitor_target_loop(self, target: TargetConfig) -> None:
         """Monitor a single target in a loop with its configured interval."""
@@ -163,7 +165,6 @@ class InventoryCrawler:
             try:
                 if self.is_within_check_window(target):
                     await self.check_target(target)
-                await asyncio.sleep(target.check_interval_seconds)
             except asyncio.CancelledError:
                 break
             except Exception as e:

@@ -9,7 +9,7 @@
       "path": ".",
       "entrypoint": "main.py",
       "scopes": [],
-      "schedule": "*/5 * * * *",
+      "schedule": "0 * * * *",
       "timeout": 300,
       "variables": [
         {

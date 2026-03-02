@@ -8,7 +8,13 @@ targets:
     url: "https://www.nike.com/t/dunk-low-retro-mens-shoes-87q99m/DD1391-100"
     user_instructions: "Check if the shoe is available to purchase. Look for an 'Add to Cart' or 'Add to Bag' button that is NOT greyed out or disabled. If the page says 'Sold Out' or 'Currently Unavailable', it is NOT available."
     notification_message: "🚨 ALERT: {target_name} is available!\n{target_url}"
-    interval: 300
+    enabled: true
+
+  - id: "umcp_champion_sweatpant_gray_medium"
+    name: "UMCP Champion Sweatpant H Gray - Medium"
+    url: "https://umcp.spirit.bncollege.com/maryland-terrapins-maryland-terrapins-champion-sweatpant-h-gray/t-12202501+p-906678469464730+z-9-2749780404?_ref=p-SRP:m-GRID:i-r0c0:po-0"
+    user_instructions: "Check if the sweatpant is available to purchase in Medium size. Look for a size selector showing available sizes. The item may show size buttons or a dropdown. Alert ONLY if Medium (M) size is available to add to cart. If Medium is greyed out, marked as 'Out of Stock', or not selectable, it is NOT available."
+    notification_message: "ALERT: {target_name} is back in stock!\n{target_url}"
     enabled: true
 
   # Example: Track concert ticket availability
@@ -16,5 +22,4 @@ targets:
   #   name: "Taylor Swift — Eras Tour DC"
   #   url: "https://www.ticketmaster.com/event/example"
   #   user_instructions: "Check if any tickets are listed as available for purchase. Look for a 'Buy Tickets' or 'Get Tickets' button. If it says 'No tickets available' or 'Sold Out', it is NOT available."
-  #   interval: 120
   #   enabled: true

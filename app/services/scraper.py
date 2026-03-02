@@ -2,9 +2,12 @@
 
 import asyncio
 
+import structlog
 from firecrawl import Firecrawl
 
 from app.config import get_settings
+
+logger = structlog.get_logger(__name__)
 
 
 class ScraperService:
@@ -12,6 +15,7 @@ class ScraperService:
         self.client = Firecrawl(api_key=get_settings().firecrawl_api_key)
 
     async def scrape_page(self, url: str) -> dict:
+        logger.info("scraping_page", url=url, service="firecrawl")
         result = await asyncio.to_thread(
             self.client.scrape, url, formats=["markdown", "screenshot"]
         )

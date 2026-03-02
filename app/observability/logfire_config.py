@@ -3,16 +3,25 @@ Simple Logfire configuration.
 Initializes Logfire with automatic pydantic-ai instrumentation.
 """
 
+import logging
 import sys
 
 import logfire
 import structlog
+import logfire.integrations.structlog
 
 from app.config import get_settings
 
 
 def configure_structlog():
     """Configure structured logging with appropriate renderer based on environment."""
+    settings = get_settings()
+    logging.basicConfig(
+        format="%(message)s",
+        stream=sys.stdout,
+        level=getattr(logging, settings.log_level.upper(), logging.INFO),
+    )
+    
     structlog.configure(
         processors=[
             structlog.stdlib.filter_by_level,
@@ -22,6 +31,7 @@ def configure_structlog():
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
+            logfire.integrations.structlog.LogfireProcessor(),
             structlog.processors.UnicodeDecoder(),
             structlog.processors.JSONRenderer() if not sys.stdout.isatty()
             else structlog.dev.ConsoleRenderer(colors=True),
@@ -63,21 +73,13 @@ def initialize_logfire():
 
 
 def log_event(event: str, **kwargs) -> None:
-    if _initialized:
-        logfire.info(event, **kwargs)
     logger.info(event, **kwargs)
 
 def log_error(event: str, **kwargs) -> None:
-    if _initialized:
-        logfire.error(event, **kwargs)
     logger.error(event, **kwargs)
 
 def log_warning(event: str, **kwargs) -> None:
-    if _initialized:
-        logfire.warn(event, **kwargs)
     logger.warning(event, **kwargs)
 
 def log_debug(event: str, **kwargs) -> None:
-    if _initialized:
-        logfire.debug(event, **kwargs)
     logger.debug(event, **kwargs)
