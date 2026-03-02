@@ -2,7 +2,7 @@
 
 ## Overview
 
-Echo is a general-purpose inventory monitoring tool. It scrapes arbitrary web pages (e-commerce, ticketing, course registration, etc.) using Firecrawl, analyzes the page content with an AI agent, and sends Telegram notifications when a user-defined availability condition is met.
+Echo is a general-purpose inventory monitoring tool. It scrapes arbitrary web pages (e-commerce, ticketing, course registration, etc.) using Firecrawl, performs multimodal AI analysis on both the page screenshot and extracted text with a vision-enabled AI agent, and sends Telegram notifications when a user-defined availability condition is met.
 
 ## Architecture
 
@@ -11,8 +11,8 @@ config/targets.yaml   →  TargetConfig models
                            ↓
 main.py (Appwrite entry point)
   └── runner.py (run_all_targets_once)
-        ├── services/scraper.py         (Firecrawl)
-        ├── services/ai_agent.py        (PydanticAI → structured AvailabilityCheck)
+        ├── services/scraper.py         (Firecrawl → markdown + screenshot)
+        ├── services/ai_agent.py        (PydanticAI → multimodal AvailabilityCheck)
         └── services/notification.py    (Telegram bot)
 ```
 

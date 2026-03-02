@@ -9,10 +9,7 @@ targets:
     user_instructions: "Check if the shoe is available to purchase. Look for an 'Add to Cart' or 'Add to Bag' button that is NOT greyed out or disabled. If the page says 'Sold Out' or 'Currently Unavailable', it is NOT available."
     notification_message: "🚨 ALERT: {target_name} is available!\n{target_url}"
     interval: 300
-    enabled: false
-    check_start_hour: 8
-    check_end_hour: 23
-    check_timezone: "America/New_York"
+    enabled: true
 
   # Example: Track concert ticket availability
   # - id: "taylor_swift_dc"

@@ -2,11 +2,7 @@
 
 ## Overview
 
-Echo is a general-purpose inventory monitoring tool. It scrapes arbitrary web pages (e-commerce, ticketing, course registration, etc.) using Firecrawl, analyzes the page content with an AI agent, and sends Telegram notifications when a user-defined availability condition is met.
-
-Always use clean architecture, follow project patterns, and write code as cleanly as possible. Use self-documenting code and avoid unnecessary comments.
-
-For running Python code, always activate the virtual environment first.
+Echo is a general-purpose inventory monitoring tool. It scrapes arbitrary web pages (e-commerce, ticketing, course registration, etc.) using Firecrawl, performs multimodal AI analysis on both the page screenshot and extracted text with a vision-enabled AI agent, and sends Telegram notifications when a user-defined availability condition is met.
 
 ## Architecture
 
@@ -15,8 +11,8 @@ config/targets.yaml   →  TargetConfig models
                            ↓
 main.py (Appwrite entry point)
   └── runner.py (run_all_targets_once)
-        ├── services/scraper.py         (Firecrawl)
-        ├── services/ai_agent.py        (PydanticAI → structured AvailabilityCheck)
+        ├── services/scraper.py         (Firecrawl → markdown + screenshot)
+        ├── services/ai_agent.py        (PydanticAI → multimodal AvailabilityCheck)
         └── services/notification.py    (Telegram bot)
 ```
 
@@ -54,3 +50,15 @@ python -c "import asyncio; from app.runner import run_all_targets_once; asyncio.
 # Deploy to Appwrite
 appwrite push functions
 ```
+
+## Deployment (Appwrite)
+
+1. Install the Appwrite CLI: `npm install -g appwrite-cli`
+2. Log in: `appwrite login`
+3. Set your project ID in `appwrite.json`
+4. Set secrets in the Appwrite Console (never in appwrite.json):
+   - `FIRECRAWL_API_KEY`
+   - `TELEGRAM_BOT_TOKEN`
+   - `TELEGRAM_CHAT_ID`
+   - `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`)
+5. Push: `appwrite push functions`
