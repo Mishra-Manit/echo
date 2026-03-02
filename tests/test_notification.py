@@ -52,7 +52,7 @@ async def test_notification():
     try:
         # Prepare test message
         test_message = (
-            "🧪 <b>TEST MESSAGE</b> from UMD Professor Alert System\n\n"
+            "🧪 <b>TEST MESSAGE</b> from the Echo Alert System\n\n"
             "This is a test notification to verify Telegram integration.\n"
             f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         )

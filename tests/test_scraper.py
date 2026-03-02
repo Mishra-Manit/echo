@@ -1,6 +1,8 @@
 """
 Test script for ScraperService.
 Demonstrates how to use the scraper and output the extracted text.
+
+python tests/test_scraper.py
 """
 
 import asyncio
@@ -22,11 +24,8 @@ logging.basicConfig(
 
 async def test_scraper():
     """Test the scraper service and output the extracted text."""
-    # Example URL - you can change this to any URL you want to test
-    # test_url = "https://example.com"
-    
-    # Alternative: Use the UMD Testudo URL from courses.yaml
-    test_url = "https://app.testudo.umd.edu/soc/search?courseId=CMSC216&sectionId=&termId=202601&_openSectionsOnly=on&creditCompare=&credits=&courseLevelFilter=ALL&instructor=Kauffman%2C+Christopher&_facetoface=on&_blended=on&_online=on&courseStartCompare=&courseStartHour=&courseStartMin=&courseStartAM=&courseEndHour=&courseEndMin=&courseEndAM=&teachingCenter=ALL&_classDay1=on&_classDay2=on&_classDay3=on&_classDay4=on&_classDay5=on"
+
+    test_url = "https://umcp.spirit.bncollege.com/maryland-terrapins-maryland-terrapins-champion-sweatpant-h-gray/t-12202501+p-906678469464730+z-9-2749780404?_ref=p-SRP:m-GRID:i-r0c0:po-0"
     
     print(f"\n{'='*60}")
     print(f"Testing ScraperService with URL: {test_url}")
