@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     # Logfire Configuration
     logfire_token: Optional[str] = Field(default=None, alias="LOGFIRE_TOKEN")
 
+    # Firecrawl Scraper Configuration
+    firecrawl_api_key: str = Field(..., alias="FIRECRAWL_API_KEY")
+
     # Configuration File Paths
     targets_config_path: str = Field(default=str(_PROJECT_ROOT / "config" / "targets.yaml"))
 

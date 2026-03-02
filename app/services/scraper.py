@@ -1,17 +1,15 @@
 """Web scraping service using Firecrawl."""
 
 import asyncio
-import os
 
-from dotenv import load_dotenv
 from firecrawl import Firecrawl
 
-load_dotenv()
+from app.config import get_settings
 
 
 class ScraperService:
     def __init__(self):
-        self.client = Firecrawl(api_key=os.environ["FIRECRAWL_API_KEY"])
+        self.client = Firecrawl(api_key=get_settings().firecrawl_api_key)
 
     async def scrape_page(self, url: str) -> dict:
         result = await asyncio.to_thread(
@@ -19,6 +17,6 @@ class ScraperService:
         )
         return {
             "url": url,
-            "markdown": result.markdown,
+            "markdown": result.markdown or "",
             "screenshot": result.screenshot,
         }
